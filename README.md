@@ -14,8 +14,8 @@ Dependencies:
 
 -iw
 
-Examples : wpa_intercept -t BSSID+PSK -p http,pop3 -c -F
+Examples : wpa_decrypt -t BSSID+PSK -p http,pop3 -c -F
 
-	   wpa_intercept -t BSSID+PSK -p get,post  -v t192.168.1.1
+	   wpa_decrypt -t BSSID+PSK -p get,post  -v t192.168.1.1
 	
 	   Use -h options to get more information
