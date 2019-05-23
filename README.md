@@ -7,8 +7,11 @@ This script allows you to decrypt packets for a specific WPA2 network.
 Dependencies:
 
 -aircrack-ng
+
 -dot11decrypt
+
 -tcpdump
+
 -iw
 
 Examples : wpa_intercept -t BSSID+PSK -p http,pop3 -c -F
