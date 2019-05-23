@@ -23,7 +23,7 @@ This script allows you to decrypt and sniff packets for a specific WPA2 network 
 
 **Examples :**
 	
-	  -wpa_decrypt -t BSSID+PSK -p http,pop3 -c -F
+	   wpa_decrypt -t BSSID+PSK -p http,pop3 -c -F
 
 	   wpa_decrypt -t BSSID+PSK -p get,post  -v t192.168.1.1
 	
