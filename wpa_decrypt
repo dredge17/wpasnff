@@ -310,7 +310,7 @@ if [[ -z $(cat  /proc/net/dev  | egrep '^wlan|mon|wlp|wlx$' | cut -d ':' -f 1 | 
 			echo -e  "[+] "${GREEN}""${W_INT[$i]}""${NC}""
 		done
 		echo -e "\n"
-		while [ -z $(echo  "${W_INT[@]}" | grep -ow "$INT") ]; do 
+		while [ -z $(grep -ow "$INT" <<< "${W_INT[@]}") ]; do 
 			read -p "[*] Choose the interface to put on monitor mode > " INT; done
 		;;
 		
@@ -336,7 +336,7 @@ else
 			echo -e  "[+] "${GREEN}""${MON_INT_LIST[$i]}""${NC}""
 		done	
 		echo -e "\n"
-		while [ -z "$monINT" ] || [ -z $(echo "${MON_INT_LIST[@]}" | grep -ow "$monINT") ]; do 
+		while [ -z "$monINT" ] || [ -z $(grep -ow "$monINT" <<< "${MON_INT_LIST[@]}") ]; do 
 			read -p "[*] Insert monitor interface  > " monINT; done
 	fi
 	
@@ -442,7 +442,7 @@ F)      BAND=a ;;
 esac
 
 done
-[ -z $(echo "$@" | grep -ow 't') ] && echo -e ""${RED}"[!] Option -t must be declared"${NC}"" 1>&2 && exit 1
+[ -z $(grep -ow 't' <<< "$@" ) ] && echo -e ""${RED}"[!] Option -t must be declared"${NC}"" 1>&2 && exit 1
 
 INTERFACE_CONTROL
 MAIN
