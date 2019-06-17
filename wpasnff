@@ -39,8 +39,8 @@ wpasnff  	[Options]	[Arguments]
 		-c						Generates file with  credentials after live capture
 		-F						Set 5GHz channel
  
-Examples : wpa_decrypt -t xx:xx:xx:xx:xx:xx+password -p http,arp -v sxx:xx:xx:xx:xx:xx,t192.168.1.1
-	   wpa_decrypt -t xx:xx:xx:xx:xx:xx+password -p snmp,post -v xx:xx:xx:xx:xx:xx,192.168.1.1
+Examples : wpasniff -t xx:xx:xx:xx:xx:xx+password -p http,arp -v sxx:xx:xx:xx:xx:xx,t192.168.1.1
+	   wpasniff -t xx:xx:xx:xx:xx:xx+password -p snmp,post -v xx:xx:xx:xx:xx:xx,192.168.1.1
 	
 	   s letter before address means src address	
 	   t letter before address means dst address
