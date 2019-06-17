@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 
 RED='\033[0;31m'
@@ -267,7 +268,7 @@ DISABLE_BAD_PROCESSES(){
 
 for (( i=0; i<$((${#W_INT[@]})); i++ ))
 	do
-		[ -z $(egrep '^wlan|mon|wlp|wlx$' | cut -d ":" -f 1 <<< "${W_INT[$i]}") ] && ifconfig "${W_INT[$i]}" down &>/dev/null
+		[ -z $(echo "${W_INT[$i]}" | egrep  '^wlan|mon|wlp|wlx$' | cut -d ":" -f 1 ) ] && ifconfig "${W_INT[$i]}" down &>/dev/null
 	done 
 
 killall wpa_supplicant &>/dev/null && [ -f "$NETMAN" ] && service network-manager stop &>/dev/null || service wicd stop &>/dev/null
