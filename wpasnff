@@ -95,7 +95,7 @@ case "$1" in
 
 	post)	PACKET_FILTER_STRING+=" tcp[((tcp[12:1] & 0xf0) >> 2):4] = 0x504F5354 or" ;;
 
-	ftp)    PACKET_FILTER_STRING+=" ftp or ftp-data or" ;;
+	ftp)    PACKET_FILTER_STRING+=" port ftp or ftp-data or" ;;
 
 	snmp)   PACKET_FILTER_STRING+=" udp port 161 or udp port 162 or" ;;
 
