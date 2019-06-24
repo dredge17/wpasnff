@@ -1,4 +1,4 @@
-# wpasniff
+# wpasnff
 
 
 
@@ -23,9 +23,9 @@ This script allows you to decrypt and sniff packets for a specific WPA2 network 
 
 **Examples :**
 	
-	   wpasniff -t BSSID+PSK -p http,pop3 -c -F
+	   wpasnff -t BSSID+PSK -p http,pop3 -c -F
 
-	   wpasniff -t BSSID+PSK -p get,post  -v t192.168.1.1
+	   wpasnff -t BSSID+PSK -p get,post  -v t192.168.1.1
 	
 	   Use -h options to get more information
 
