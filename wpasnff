@@ -233,16 +233,14 @@ for (( i=0; i<$((${#W_INT[@]})); i++ ))
 [ -f "$NETMAN" ] && service network-manager start &>/dev/null || service wicd start &>/dev/null
 }
 
-INTERFACE_CONTROL(){
+interface_control(){
 local INT=
 for dev in $(ls /sys/class/net); do
  	 [ -d "/sys/class/net/$dev/wireless" ] && W_INT+=("$dev") 
 done
 
 if [[ -z $(cat  /proc/net/dev  | egrep '^wlan|mon|wlp|wlx$' | cut -d ':' -f 1 | sed 's/ //g') ]]; then
-
 	case  "${#W_INT[@]}" in
-
 	0)	echo -e ""${RED}"[!] Wireless interface not found"${NC}"\n" 1>&2 && exit 1
 		;;
 	1)	INT="${W_INT[@]}"
@@ -291,13 +289,13 @@ echo -e "[+] Using "${GREEN}""$monINT""${NC}" as monitor interface"
 sleep 2
 }
 
-GET_CLIENTS(){
+get_clients(){
 xterm -hold -e airodump-ng -c "$CH" --write /tmp/data --bssid "$BSSID"  --output-format netxml  "$monINT" &
 read -p "[+] Press [ENTER] to kill airodump" stop;
 killall xterm &> /dev/null
 }
 
-CONTROL_EXISTENTCE_AND_GET_TARGET_CHANNEL(){
+control_existence_and_get_target_channel(){
 xterm -hold -e airodump-ng  --write /tmp/channel --bssid "$BSSID" --band "$BAND"  --output-format netxml "$monINT" &
 sleep 7
 
@@ -310,18 +308,18 @@ echo -e "ESSID:			"${GREEN}""$ESSID""${NC}""
 echo -e "WORKING CHANNEL:	"${GREEN}""$CH""${NC}"\n"
 }
 
-MAIN(){
+main(){
 echo -e ""${RED}"[!] Network-manager and all wireless interfaces will be stopped"${NC}""
 echo -e ""${RED}"[!] They will be reactivated after aireplay execution"${NC}"\n"
  
 disable_bad_processes 
 
 echo -e "[*] Checking out for AP and obtaining working AP channel...\n"
-CONTROL_EXISTENTCE_AND_GET_TARGET_CHANNEL
+control_existence_and_get_target_channel
 sleep 2
 
 echo -e "[*] Capturing stations connected to the AP ... "
-GET_CLIENTS
+get_clients
 sleep 2
 
 echo -e "\n"${GREEN}"\t \t \t \t SUMMARY"${NC}"\n"
@@ -374,5 +372,5 @@ while getopts ":t:p:v:chF" options ; do
 done
 [ -z $(grep -ow 't' <<< "$@") ] && echo -e ""${RED}"[!] Option -t must be declared"${NC}"" 1>&2 && exit 1
 
-INTERFACE_CONTROL
-MAIN
+interface_control
+main
